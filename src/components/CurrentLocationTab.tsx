@@ -82,6 +82,8 @@ const CurrentLocationTab = () => {
 
   const fetchJurisdictionByLocation = async (latitude: number, longitude: number) => {
     try {
+      console.log('Calling texas-jurisdiction function with:', { latitude, longitude });
+      
       const { data, error } = await supabase.functions.invoke('texas-jurisdiction', {
         body: {
           latitude: latitude,
@@ -89,15 +91,23 @@ const CurrentLocationTab = () => {
         }
       });
 
+      console.log('Edge function response:', { data, error });
+
       if (error) {
+        console.error('Edge function error:', error);
         throw new Error(error.message);
       }
 
+      if (!data) {
+        throw new Error('No data received from jurisdiction service');
+      }
+
+      console.log('Setting jurisdiction info:', data);
       setJurisdictionInfo({
-        agencyName: data.agencyName,
-        nonEmergencyPhone: data.nonEmergencyPhone,
-        physicalAddress: data.physicalAddress,
-        website: data.website
+        agencyName: data.agencyName || 'Unknown Agency',
+        nonEmergencyPhone: data.nonEmergencyPhone || 'Not available',
+        physicalAddress: data.physicalAddress || 'Not available',
+        website: data.website || 'Not available'
       });
 
       toast({

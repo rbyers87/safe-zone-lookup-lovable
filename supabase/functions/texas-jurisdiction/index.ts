@@ -52,7 +52,8 @@ serve(async (req) => {
 
     if (cityInfo && cityInfo.cityName) {
       // Look for city law enforcement
-      const { data: cityAgency } = await supabase
+      console.log('Searching for city agency:', cityInfo.cityName);
+      const { data: cityAgency, error: cityError } = await supabase
         .from('texas_agencies')
         .select('*')
         .eq('agency_type', 'city')
@@ -60,14 +61,18 @@ serve(async (req) => {
         .limit(1)
         .single();
 
+      console.log('City agency query result:', { cityAgency, cityError });
+
       if (cityAgency) {
         console.log('Found city agency:', cityAgency.agency_name);
-        return new Response(JSON.stringify({
+        const result = {
           agencyName: cityAgency.agency_name,
           nonEmergencyPhone: cityAgency.non_emergency_phone || 'Not available',
           physicalAddress: cityAgency.physical_address || 'Not available',
           website: cityAgency.website || 'Not available'
-        }), {
+        };
+        console.log('Returning city result:', result);
+        return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -78,7 +83,8 @@ serve(async (req) => {
     console.log('County info:', countyInfo);
 
     if (countyInfo && countyInfo.countyName) {
-      const { data: countyAgency } = await supabase
+      console.log('Searching for county agency:', `${countyInfo.countyName} County`);
+      const { data: countyAgency, error: countyError } = await supabase
         .from('texas_agencies')
         .select('*')
         .eq('agency_type', 'county')
@@ -86,26 +92,33 @@ serve(async (req) => {
         .limit(1)
         .single();
 
+      console.log('County agency query result:', { countyAgency, countyError });
+
       if (countyAgency) {
         console.log('Found county agency:', countyAgency.agency_name);
-        return new Response(JSON.stringify({
+        const result = {
           agencyName: countyAgency.agency_name,
           nonEmergencyPhone: countyAgency.non_emergency_phone || 'Not available',
           physicalAddress: countyAgency.physical_address || 'Not available',
           website: countyAgency.website || 'Not available'
-        }), {
+        };
+        console.log('Returning county result:', result);
+        return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
     }
 
     // If no specific agency found, return generic Texas info
-    return new Response(JSON.stringify({
+    console.log('No specific agency found, returning Texas DPS');
+    const fallbackResult = {
       agencyName: 'Texas Department of Public Safety',
       nonEmergencyPhone: '512-424-2000',
       physicalAddress: '5805 N Lamar Blvd, Austin, TX 78752',
       website: 'https://www.dps.texas.gov'
-    }), {
+    };
+    console.log('Returning fallback result:', fallbackResult);
+    return new Response(JSON.stringify(fallbackResult), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
