@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Search, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import JurisdictionResults from "@/components/JurisdictionResults";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,22 +50,32 @@ const ManualAddressTab = () => {
   };
 
   const fetchJurisdictionByAddress = async (addressInput: string) => {
-    // This would call our Supabase Edge Function
-    // For now, we'll use mock data
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
-    
-    const mockData: JurisdictionInfo = {
-      agencyName: "City Police Department",
-      nonEmergencyPhone: "(555) 987-6543",
-      physicalAddress: "5678 Police Plaza, City Center, State 54321",
-      website: "https://example-city-police.gov"
-    };
-    
-    setJurisdictionInfo(mockData);
-    toast({
-      title: "Address Found",
-      description: "Successfully retrieved jurisdiction information",
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('texas-jurisdiction', {
+        body: {
+          address: addressInput
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setJurisdictionInfo({
+        agencyName: data.agencyName,
+        nonEmergencyPhone: data.nonEmergencyPhone,
+        physicalAddress: data.physicalAddress,
+        website: data.website
+      });
+
+      toast({
+        title: "Address Found",
+        description: "Successfully retrieved jurisdiction information",
+      });
+    } catch (err) {
+      console.error("Jurisdiction fetch error:", err);
+      throw err;
+    }
   };
 
   return (

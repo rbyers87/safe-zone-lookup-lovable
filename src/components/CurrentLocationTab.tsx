@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, MapPin, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import JurisdictionResults from "@/components/JurisdictionResults";
 import { useToast } from "@/hooks/use-toast";
 
@@ -80,22 +81,33 @@ const CurrentLocationTab = () => {
   };
 
   const fetchJurisdictionByLocation = async (latitude: number, longitude: number) => {
-    // This would call our Supabase Edge Function
-    // For now, we'll use mock data
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
-    
-    const mockData: JurisdictionInfo = {
-      agencyName: "Metropolitan Police Department",
-      nonEmergencyPhone: "(555) 123-4567",
-      physicalAddress: "1234 Main Street, Your City, State 12345",
-      website: "https://example-police.gov"
-    };
-    
-    setJurisdictionInfo(mockData);
-    toast({
-      title: "Location Found",
-      description: "Successfully retrieved jurisdiction information",
-    });
+    try {
+      const { data, error } = await supabase.functions.invoke('texas-jurisdiction', {
+        body: {
+          latitude: latitude,
+          longitude: longitude
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setJurisdictionInfo({
+        agencyName: data.agencyName,
+        nonEmergencyPhone: data.nonEmergencyPhone,
+        physicalAddress: data.physicalAddress,
+        website: data.website
+      });
+
+      toast({
+        title: "Location Found",
+        description: "Successfully retrieved jurisdiction information",
+      });
+    } catch (err) {
+      console.error("Jurisdiction fetch error:", err);
+      throw err;
+    }
   };
 
   // Auto-detect location on component mount
