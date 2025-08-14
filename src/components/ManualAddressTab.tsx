@@ -51,16 +51,27 @@ const ManualAddressTab = () => {
 
   const fetchJurisdictionByAddress = async (addressInput: string) => {
     try {
+      console.log('Calling texas-jurisdiction function with address:', addressInput);
+      
       const { data, error } = await supabase.functions.invoke('texas-jurisdiction', {
         body: {
           address: addressInput
         }
       });
 
+      console.log('Edge function response:', { data, error });
+
       if (error) {
+        console.error('Edge function error:', error);
         throw new Error(error.message);
       }
 
+      if (!data) {
+        console.error('No data returned from edge function');
+        throw new Error('No data returned from jurisdiction service');
+      }
+
+      console.log('Setting jurisdiction info:', data);
       setJurisdictionInfo({
         agencyName: data.agencyName,
         nonEmergencyPhone: data.nonEmergencyPhone,
